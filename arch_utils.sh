@@ -23,11 +23,15 @@ sudo pacman -S --needed --noconfirm \
 
 # --- Programming languages & runtimes ---
 sudo pacman -S --needed --noconfirm \
-  python go rust nodejs npm
+ python go rust nodejs npm python-pip tk python-pillow python-pyqt5
 
 # --- Media ---
 sudo pacman -S --needed --noconfirm \
   mpv
+
+# --- Office ---
+sudo pacman -S --needed --noconfirm \
+  libreoffice-fresh
 
 # --- Internationalization (fonts + input methods) ---
 sudo pacman -S --needed --noconfirm \
@@ -38,11 +42,9 @@ sudo pacman -S --needed --noconfirm \
   ttf-dejavu \
   ttf-liberation \
   fcitx5 fcitx5-configtool fcitx5-gtk fcitx5-qt \
-  fcitx5-mozc \        # Japanese input
-  fcitx5-hangul \      # Korean input
-  fcitx5-chewing \     # Chinese (Zhuyin)
-  fcitx5-pinyin \      # Chinese (Pinyin)
-  fcitx5-thai          # Thai input
+  fcitx5-mozc \
+  fcitx5-hangul \
+  fcitx5-chewing
 
 # --- Ensure yay is installed ---
 if ! command -v yay &> /dev/null; then
@@ -54,7 +56,12 @@ fi
 
 # --- AUR packages ---
 yay -S --needed --noconfirm \
-  jellyfin-mpv-shim jellyfin-media-player
+  jellyfin-media-player \
+  jellyfin-mpv-shim \
+  jellyfin-mpv-shim-shaders \
+  mpv-shim-default-shaders \
+  python-pystray
+
 
 # --- Configure fcitx5 environment variables ---
 XPROFILE="$HOME/.xprofile"
