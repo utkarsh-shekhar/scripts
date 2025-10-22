@@ -23,11 +23,11 @@ sudo pacman -S --needed --noconfirm \
 
 # --- Programming languages & runtimes ---
 sudo pacman -S --needed --noconfirm \
- python go rust nodejs npm python-pip tk python-pillow python-pyqt5
+ python go rust nodejs npm python-pip tk python-pillow python-pyqt5 pulumi
 
 # --- Media ---
 sudo pacman -S --needed --noconfirm \
-  mpv
+  mpv ffmpeg vlc vlc-plugins-all
 
 # --- Office ---
 sudo pacman -S --needed --noconfirm \
