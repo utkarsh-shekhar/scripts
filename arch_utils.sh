@@ -27,7 +27,9 @@ sudo pacman -S --needed --noconfirm \
 
 # --- Media ---
 sudo pacman -S --needed --noconfirm \
-  mpv ffmpeg vlc vlc-plugins-all
+  mpv ffmpeg vlc vlc-plugins-all \
+  guitarix \
+  helvum
 
 # --- Office ---
 sudo pacman -S --needed --noconfirm \
