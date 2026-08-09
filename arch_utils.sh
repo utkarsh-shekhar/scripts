@@ -16,6 +16,32 @@
 # =============================================================================
 set -euo pipefail
 
+mod_ollama() {
+  step "Ollama (local LLM runtime for hyprwhspr cleaner)"
+  # Base runtime (CPU inference) — this alone runs gemma3:1b for dictation cleanup.
+  pac ollama
+
+  # OPTIONAL GPU variant. Pulls the full ~5GB 'cuda' package. Skip unless you
+  # want GPU inference (the dictation cleaner works fine on CPU).
+  if [[ "${INSTALL_OLLAMA_CUDA:-no}" == "yes" ]]; then
+    pac ollama-cuda 2>/dev/null || warn "ollama-cuda not available"
+  else
+    info "skipping ollama-cuda (optional GPU inference; set INSTALL_OLLAMA_CUDA=yes to enable)"
+  fi
+
+  # Use the packaged systemd service so it autostarts.
+  # NOTE: the unit sets HOME=/var/lib/ollama, so models live there (root-owned),
+  # independent of the user session. If you prefer ~/.ollama, run ollama manually.
+  if systemctl list-unit-files | grep -q '^ollama.service'; then
+    enable ollama
+    sleep 1
+    ollama pull gemma3:1b || warn "could not pull gemma3:1b (is the ollama service running?)"
+  else
+    warn "no ollama systemd unit; start 'ollama serve' manually, then pull gemma3:1b"
+  fi
+  install_ok
+}
+
 # ---------------------------------------------------------------- helpers ----
 RED=$'\033[0;31m'; GREEN=$'\033[0;32m'; YELLOW=$'\033[0;33m'; BLUE=$'\033[0;34m'; NC=$'\033[0m'
 
@@ -235,11 +261,12 @@ declare -A MODULES=(
   [games_apps]="${BLUE}Games & apps${NC} — steam, discord"
   [aur]="${BLUE}AUR${NC} — yay + chrome, etcher, armbian, jellyfin, hyprwhspr"
   [hyprwhspr_setup]="${BLUE}Hyprwhspr setup${NC} — systemd user service + backend"
+  [ollama]="${BLUE}Ollama${NC} — local LLM runtime + gemma3:1b model for cleaner"
 )
 
 ORDER=(core cli_tools networking dev_langs media audio office fonts_i18n
        kde_desktop gpu_nvidia bluetooth hardware browsers games_apps aur
-       hyprwhspr_setup)
+       ollama hyprwhspr_setup)
 
 # ---------------------------------------------------------------- runner ----
 run_module() {
