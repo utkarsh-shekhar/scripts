@@ -161,11 +161,40 @@ mod_aur() {
 
 mod_hyprwhspr_setup() {
   step "Hyprwhspr post-install configuration"
-  # Ensure the venv + backend are set up after first install
   if command -v hyprwhspr &>/dev/null; then
-    info "hyprwhspr present — run 'hyprwhspr setup' once to complete backend install"
+    # Install the LLM dictation cleaner (with name/place grounding) from this repo
+    local SCRIPT_SRC="$(dirname "$0")/hyprwhspr-cleantext.py"
+    local SCRIPT_DST="$HOME/.local/bin/hyprwhspr-cleantext"
+    mkdir -p "$HOME/.local/bin"
+    if [[ -f "$SCRIPT_SRC" ]]; then
+      install -m 0755 "$SCRIPT_SRC" "$SCRIPT_DST"
+      info "installed cleaner to $SCRIPT_DST"
+    else
+      warn "hyprwhspr-cleantext.py not found next to arch_utils.sh"
+    fi
+
+    # Point the transcription hook at the cleaner (adds it to config.json)
+    CFG="$HOME/.config/hyprwhspr/config.json"
+    if [[ -f "$CFG" ]]; then
+      python3 - "$CFG" "$SCRIPT_DST" <<'PY'
+import json, sys
+cfg, dst = sys.argv[1], sys.argv[2]
+try:
+    d = json.load(open(cfg))
+except Exception:
+    d = {}
+d['post_transcription_hook'] = dst
+json.dump(d, open(cfg, 'w'), indent=2)
+print("post_transcription_hook ->", dst)
+PY
+      info "wired post_transcription_hook into $CFG"
+    else
+      warn "hyprwhspr config not found — run 'hyprwhspr setup' first"
+    fi
+
     # Enable the systemd user service (idempotent)
     systemctl --user enable hyprwhspr 2>/dev/null || warn "hyprwhspr user service not found yet"
+    info "hyprwhspr ready — run 'hyprwhspr setup' once to complete backend install"
   else
     warn "hyprwhspr not found — install it (AUR module) first"
   fi
