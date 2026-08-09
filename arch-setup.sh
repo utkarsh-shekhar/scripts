@@ -1,14 +1,14 @@
 #!/bin/bash
 # =============================================================================
-#  arch_utils.sh — Modular Arch Linux setup utility
+#  arch-setup.sh — Modular Arch Linux setup utility
 # =============================================================================
 #  Install your Arch system in batches ("modules") instead of a single run.
 #
 #  Usage:
-#    ./arch_utils.sh                  # interactive module selection
-#    ./arch_utils.sh --all            # install every module
-#    ./arch_utils.sh --only audio,gpu # install only listed modules
-#    ./arch_utils.sh --list           # show available modules
+#    ./arch-setup.sh                  # interactive module selection
+#    ./arch-setup.sh --all            # install every module
+#    ./arch-setup.sh --only audio,gpu # install only listed modules
+#    ./arch-setup.sh --list           # show available modules
 #
 #  Every module is idempotent (safe to re-run; uses --needed). Services are
 #  enabled/started where appropriate. No file backup is needed: this file is
@@ -196,7 +196,7 @@ mod_hyprwhspr_setup() {
       install -m 0755 "$SCRIPT_SRC" "$SCRIPT_DST"
       info "installed cleaner to $SCRIPT_DST"
     else
-      warn "hyprwhspr-cleantext.py not found next to arch_utils.sh"
+      warn "hyprwhspr-cleantext.py not found next to arch-setup.sh"
     fi
 
     # Point the transcription hook at the cleaner (adds it to config.json)
