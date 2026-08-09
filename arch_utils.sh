@@ -268,6 +268,29 @@ ORDER=(core cli_tools networking dev_langs media audio office fonts_i18n
        kde_desktop gpu_nvidia bluetooth hardware browsers games_apps aur
        ollama hyprwhspr_setup)
 
+# ------------------------------------------------- plan metadata (dry-run) ----
+# Each entry: mod|packages-to-install|optional-deps|heavy?|notes
+# light = small, lean = the minimal set, heavy = large downloads/extra deps
+declare -A PLAN=(
+  [core]="base-devel git sudo bash-completion curl wget|-|light|essential build/base tools"
+  [cli_tools]="neovim less man-db man-pages which file tree htop ncdu ripgrep fd bat eza jq fzf tmux vim nano zip unzip|-|light|core terminal tools"
+  [networking]="openssh net-tools inetutils dnsutils iproute2 iputils networkmanager network-manager-applet iwd bind wireless_tools|-|light|enables NetworkManager"
+  [dev_langs]="python go rust nodejs npm python-pip tk python-pillow python-pyqt5 pulumi|-|medium|programming languages & runtimes (~1GB)"
+  [media]="mpv ffmpeg vlc vlc-plugins-all obs-studio feh yt-dlp transmission-qt|-|heavy|large media apps; obs+vlc+ffmpeg are big"
+  [audio]="pipewire pipewire-pulse pipewire-alsa pipewire-jack wireplumber gst-plugin-pipewire helvum libpulse easyeffects qjackctl qpwgraph audacity lmms guitarix|-|heavy|full audio/production stack (large)"
+  [office]="libreoffice-fresh|-|heavy|large office suite (~1GB)"
+  [fonts_i18n]="noto-fonts noto-fonts-cjk noto-fonts-emoji noto-fonts-extra ttf-dejavu ttf-liberation fcitx5 fcitx5-configtool fcitx5-gtk fcitx5-qt fcitx5-mozc fcitx5-hangul fcitx5-chewing|-|medium|fonts + CJK IME (large font downloads)"
+  [kde_desktop]="plasma-meta sddm sddm-kcm|-|heavy|full KDE Plasma desktop (very large)"
+  [gpu_nvidia]="nvidia-open-dkms nvidia-utils libva-nvidia-driver dkms realtime-privileges|ollama-cuda (GPU inference)|heavy|NVIDIA drivers (~1GB)"
+  [bluetooth]="bluez bluez-utils|-|light|enables bluetooth"
+  [hardware]="sof-firmware wacomtablet efibootmgr intel-ucode linux-headers smartmontools zram-generator alsa-utils xdg-utils xorg-xinit|-|medium|firmware + hardware support"
+  [browsers]="chromium firefox|-|medium|web browsers"
+  [games_apps]="steam discord|-|heavy|steam is very large"
+  [aur]="google-chrome balena-etcher armbian-imager-bin jdownloader2 vial-appimage jellyfin-media-player jellyfin-mpv-shim mpv-shim-default-shaders python-pystray hyprwhspr|-|heavy|AUR builds from source (slow, many deps)"
+  [ollama]="ollama|ollama-cuda (GPU, +5GB); gemma3:1b model (~800MB)|heavy|local LLM runtime + model download"
+  [hyprwhspr_setup]="(post-install) cleaner + hook|-|interactive|hyprwhspr backend setup (onnx-asr model ~1GB) — SKIP for lean"
+)
+
 # ---------------------------------------------------------------- runner ----
 run_module() {
   CURRENT_MODULE="$1"
@@ -280,13 +303,55 @@ run_module() {
   fi
 }
 
-# ---------------------------------------------------------------- main -------
+# ---------------------------------------------------------------- plan -------
+render_plan() {
+  echo
+  step "Installation plan (dry-run — nothing installed)"
+  echo "${YELLOW}Legend:  [light] small deps   [medium] moderate   [heavy] LARGE downloads   [interactive] asks you${NC}"
+  echo
+  local o
+  for m in "${ORDER[@]}"; do
+    IFS='|' read -r pkgs opts heaviness note <<< "${PLAN[$m]}"
+    printf "  ${BLUE}%-16s${NC} %s\n" "$m" "$note"
+    if [[ "$heaviness" == "interactive" ]]; then
+      printf "    action    : ${YELLOW}%s${NC}\n" "$pkgs"
+    else
+      printf "    packages  : %s\n" "${pkgs// /, }"
+      if [[ -n "$opts" && "$opts" != "-" ]]; then
+        printf "    optional  : ${YELLOW}%s${NC}\n" "$opts"
+      fi
+    fi
+    printf "    size      : %s\n" "$heaviness"
+    echo
+  done
+}
+
+# Interactive confirm of heavy/interactive modules -> returns "selected" list
+ask_select() {
+  local chosen=()
+  for m in "${ORDER[@]}"; do
+    IFS='|' read -r pkgs opts heaviness note <<< "${PLAN[$m]}"
+    if [[ "$heaviness" == "heavy" || "$heaviness" == "interactive" ]]; then
+      read -p "  Install ${BLUE}${m}${NC}? [${note}] (y/N) " ans
+      case "$ans" in
+        y|Y|yes) chosen+=("$m"); info "include $m" ;;
+        *) warn "skip $m (lean install)" ;;
+      esac
+    else
+      chosen+=("$m")   # light/medium auto-include for lean baseline
+    fi
+  done
+  SELECTED_MODULES=("${chosen[@]}")
+}
+
 usage() {
   echo "Usage:"
   echo "  $0                 interactive module selection"
-  echo "  $0 --all           install every module"
+  echo "  $0 --all           install every module (full, heavy)"
+  echo "  $0 --lean          install light/medium only; prompts for heavy/interactive (SKIPS ollama model, hyprwhspr setup)"
   echo "  $0 --only a,b,c    install only the listed modules"
   echo "  $0 --list          show available modules"
+  echo "  $0 --plan          dry-run: show what would be installed, optional deps, sizes"
 }
 
 if [[ $# -gt 0 ]]; then
@@ -296,6 +361,18 @@ if [[ $# -gt 0 ]]; then
         printf "  %-16s %s\n" "$m" "${MODULES[$m]}"
       done
       exit 0
+      ;;
+    --plan)
+      render_plan
+      exit 0
+      ;;
+    --lean)
+      echo
+      step "Lean install — showing heavy/interactive modules for confirmation"
+      ask_select
+      echo
+      step "Installing selected modules"
+      for m in "${SELECTED_MODULES[@]}"; do run_module "$m"; done
       ;;
     --all)
       for m in "${ORDER[@]}"; do run_module "$m"; done
