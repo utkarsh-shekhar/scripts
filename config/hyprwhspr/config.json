@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/goodroot/hyprwhspr/main/share/config.schema.json",
+  "keyboard_device_names": [
+    "Thomas Haukland Cheapino2",
+    "Thomas Haukland Cheapino2 Keyboard",
+    "YICHIP 2.4G Receiver"
+  ],
+  "post_transcription_hook": "/home/utkarsh/.local/bin/hyprwhspr-cleantext",
+  "transcription_backend": "onnx-asr",
+  "audio_ducking": true,
+  "backend": {
+    "type": "onnx-asr",
+    "device": "cpu"
+  },
+  "hotkeys": {
+    "toggle_recording": "ctrl+alt+space",
+    "push_to_talk": "ctrl+alt+r"
+  },
+  "audio": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "device": "auto"
+  },
+  "output": {
+    "type": "clipboard",
+    "also_print": true
+  },
+  "primary_shortcut": "CTRL+ALT+SUPER+D"
+}
